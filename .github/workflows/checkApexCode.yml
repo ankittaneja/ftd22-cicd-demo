@@ -1,0 +1,99 @@
+# This is a basic workflow to help you get started with Actions for Salesforce
+
+# A Sample job to check apex-code for best practice(s) violations
+
+name: validate-apex-code
+# Controls when the workflow will run
+on: [push, pull_request] # Triggers the workflow on push or pull request events but only for the "main" branch
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  check-best-practices:
+    runs-on: ubuntu-latest
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: 'Checkout source code'
+        uses: actions/checkout@v3
+      
+      # Install PMD
+      - name: 'Install PMD'
+        run: |
+            PMD_VERSION=${{ secrets.PMD_VERSION }}
+            wget https://github.com/pmd/pmd/releases/download/pmd_releases/$PMD_VERSION/pmd-bin-$PMD_VERSION.zip
+            unzip pmd-bin-$PMD_VERSION.zip -d ~
+            mv ~/pmd-bin-$PMD_VERSION ~/pmd
+            ~/pmd/bin/run.sh pmd --version
+      
+      - name: 'Run PMD'
+        id: pmd
+        run: |
+            ~/pmd/bin/run.sh pmd -l apex -d force-app -R ruleset.xml -f text -r path/to/artifact/world.txt 
+      
+      - name: Upload Artifact on PMD failure
+        id: upload
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: my-artifact
+          path: path/to/artifact/world.txt
+      
+      - name: Send Email on PMD Failure
+        id: send-email
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          # Required mail server address if not connection_url:
+          server_address: smtp.gmail.com
+          # Server port, default 25:
+          server_port: 465
+          # Optional whether this connection use TLS (default is true if server_port is 465)
+          secure: true
+          # Optional (recommended): mail server username:
+          username: 'hausmeister@forcepreneur.com'
+          # Optional (recommended) mail server password:
+          password: ${{secrets.MAIL_PASSWORD}}
+          # Required mail subject:
+          subject: Github Actions job result
+          # Required recipients' addresses:
+          to: a.taneja@gesundheitsgmbh.de, s.schmueser@gesundheitsgmbh.de
+          # Required sender full name (address can be skipped):
+          from: Luke Skywalker # <user@example.com>
+          # Optional plain body:
+          body: Build job of ${{github.repository}} completed successfully!
+          # Optional HTML body read from file:
+          # html_body: file://README.html
+          # Optional carbon copy recipients:
+          # cc: kyloren@example.com,leia@example.com
+          # # Optional blind carbon copy recipients:
+          # bcc: r2d2@example.com,hansolo@example.com
+          # # Optional recipient of the email response:
+          # reply_to: luke@example.com
+          # # Optional Message ID this message is replying to:
+          # in_reply_to: <random-luke@example.com>
+          # # Optional unsigned/invalid certificates allowance:
+          # ignore_cert: true
+          # # Optional converting Markdown to HTML (set content_type to text/html too):
+          # convert_markdown: true
+          # Optional attachments:
+          attachments: path/to/artifact/world.txt
+          # Optional priority: 'high', 'normal' (default) or 'low'
+          priority: normal
+            
+      - name: Auto Comment
+        uses: bubkoo/auto-comment@v1
+        if:   failure()
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          pullRequestOpened: >
+            👋 @{{ author }}
+            
+            Thank you for raising your pull request.
+            
+            This is the code delta:
+            
+            ```
+            
+            ${{ steps.pmd.outputs }}
+            
+            ```
+            
+            Please make sure you have followed our contributing guidelines. We will review it as soon as possible.
