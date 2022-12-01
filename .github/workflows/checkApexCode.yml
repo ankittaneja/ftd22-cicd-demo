@@ -26,7 +26,7 @@ jobs:
       - name: 'Run PMD'
         id: pmd
         run: |
-            ~/pmd/bin/run.sh pmd -l apex -d force-app -R ruleset.xml -f text -r path/to/artifact/world.txt 
+            ~/pmd/bin/run.sh pmd -l apex -d force-app -R ruleset.xml -f text -r path/to/artifact/pmd-errors.txt 
       
       - name: Upload Artifact on PMD failure
         id: upload
@@ -56,7 +56,7 @@ jobs:
           # Required recipients' addresses:
           to: ankit@hutte.io
           # Required sender full name (address can be skipped):
-          from: Luke Skywalker # <user@example.com>
+          from: Ankit Taneja # <user@example.com>
           # Optional plain body:
           body: Build job of ${{github.repository}} completed successfully!
           # Optional HTML body read from file:
@@ -74,7 +74,7 @@ jobs:
           # # Optional converting Markdown to HTML (set content_type to text/html too):
           # convert_markdown: true
           # Optional attachments:
-          attachments: path/to/artifact/world.txt
+          attachments: path/to/artifact/pmd-errors.txt
           # Optional priority: 'high', 'normal' (default) or 'low'
           priority: normal
 
